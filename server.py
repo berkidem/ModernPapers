@@ -20,11 +20,7 @@ import json
 import xml.etree.ElementTree as ET
 import base64
 import re
-import requests
 from flask import Flask, request, jsonify, send_from_directory
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 # Configuration
@@ -145,54 +141,6 @@ def save_paper():
                     f.write(img_data)
 
     return jsonify({"status": "success", "message": f"Paper saved in '{sane_dir_name}'."})
-
-
-@app.route("/api/gemini", methods=["POST"])
-def gemini_proxy():
-    """
-    API endpoint to act as a secure proxy to the Google Gemini API.
-
-    This is necessary to avoid exposing the API key in the frontend client-side code.
-    The frontend sends the request payload here, and this server adds the
-    API key (loaded from the .env file) before forwarding it to Google.
-    """
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        return jsonify({"error": "API key not configured on the server."}), 500
-
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "Invalid JSON payload."}), 400
-
-    # The model is now sent from the frontend in the payload
-    model = data.get('model', 'gemini-1.5-flash-latest')
-
-    # We remove the model from the payload before sending it to Google,
-    # as it's part of the URL.
-    if 'model' in data:
-        del data['model']
-
-    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-
-    try:
-        response = requests.post(gemini_url, json=data, timeout=120)
-        # Raise an exception for bad status codes (4xx or 5xx)
-        response.raise_for_status()
-
-        # Return Google's response directly to the client
-        return jsonify(response.json())
-
-    except requests.exceptions.RequestException as e:
-        # Handle network errors or bad responses from Google
-        error_message = f"Failed to communicate with Gemini API: {e}"
-        # Try to include Google's error message if available
-        try:
-            error_details = e.response.json()
-            error_message = error_details.get("error", {}).get("message", error_message)
-        except:
-            pass # Stick with the original error if we can't parse the response
-
-        return jsonify({"error": error_message}), 502 # 502 Bad Gateway
 
 # -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 # Static File Serving
