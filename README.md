@@ -2,14 +2,48 @@
 
 "Some books are to be tasted; others swallowed; and some few to be chewed and digested." - Bacon. Yet our academic work does not present this way. 
 
-Reading PDFs sucks.  Reading static documents sucked. Reading documents you have to Ctrl-F to look things up sucks. But all of our research, especially old research, is in these pdfs. Here's a one file html, using only free tier LLM access, that 1) rips your pdf or latex+bib articles into a standard XML format, 2) creates a clean frontend to display this to readers, 3) uses AI to provide a "short summary" for lay readers, 4) includes a more complex AI to query the document with high quality, quickly, and a clean UI. And it's free, even the AI. **UPDATE - I have now included an auto-image extractor which pulls out both raster and vector images and autotags them (it is 99% good but not perfect so of course check the rendering). Remaining tasks are summaries at various levels for the readers, and a second double-check of table accuracy.**
+Reading PDFs sucks. Reading static documents sucked. Reading documents you have to Ctrl-F to look things up sucks. But all of our research, especially old research, is in these pdfs. Here's a one file html, using only free tier LLM access, that 1) rips your pdf or latex+bib articles into a standard XML format, 2) creates a clean frontend to display this to readers, 3) uses AI to provide a "short summary" for lay readers, 4) includes a more complex AI to query the document with high quality, quickly, and a clean UI. And it's free, even the AI. **UPDATE - I have now included an auto-image extractor which pulls out both raster and vector images and autotags them (it is 99% good but not perfect so of course check the rendering). Remaining tasks are summaries at various levels for the readers, and a second double-check of table accuracy.**
 
-You can find examples at https://kevinbryanecon.com/ModernPapers/?data=BryanHoffmanSariri2025/paper.xml and https://kevinbryanecon.com/ModernPapers/?data=BryanGuzman2023/paper.xml. Without the url query, you'll go to a paper upload mode.  Once in a while there is an XML error you may have to clean up. The only other thing you have to do is to put the xml in a folder, add the figures (generally named fig_1.png, fig_2.png, etc.) to the folder, and you are live!
+**NEW in v2.0:** This tool now includes a Python-based backend that automatically creates a local library of your processed papers. When you first run the app, you'll see a list of previously processed papers, and you can upload new ones. After processing, papers are saved to a `papers/` directory for easy access.
 
-My other tools are at https://kevinbryanecon.com/tools.html and on this Git.  Of course, if you teach at a university, you must check out All Day TA (https://www.alldayta.com) which is this type of AI tool times one thousand.
+You can find examples at https://kevinbryanecon.com/ModernPapers/?data=BryanHoffmanSariri2025/paper.xml and https://kevinbryanecon.com/ModernPapers/?data=BryanGuzman2023/paper.xml.
 
-How to set up? You will need a Google API key (aistudio.google.com); the free tier is sufficient for this use case.  If you have your own website, create a .htaccess with SetEnv GEMINI_API_KEY (your key here).  If you don't have this, the site will just ask you to paste in a Gemini key once per session.
+My other tools are at https://kevinbryanecon.com/tools.html and on this Git. Of course, if you teach at a university, you must check out All Day TA (https://www.alldayta.com) which is this type of AI tool times one thousand.
 
-To run this locally on your computer, go from the command prompt to the folder where you have index.html, type py -m http.server 8000.  Then go to localhost:8000 in your browser and you'll see the site. If you have no url query (the part of the website after the ?), you will just open a site that you create an XML file from your document then download it. If you have already done this and gotten your images set in some folder, just open localhost:8000?data=/FolderName/xmlfilename.xml.  If you put this on your own website (I create a subfolder, FolderName above, for each paper and its images, which the code will give you as a zip), all is identical except you can use the .php (in this Git) and .htaccess (described above) to allow users without a key to use AI to talk to your papers.
+## How to Set Up and Run Locally
 
-Let me know if you modify and improve (I already have in mind an 'adaptive' paper that goes from 500 words for the public, to 2000 words Quanta magazine style, to a review article description, to full details, with users able to choose and expand at will and AI handling those summarizations).  A new way to read academic research is en route.
+#### 1. API Key
+You will need a Google API key with access to the Gemini models. The free tier is generally sufficient for this use case. You can get a key from [aistudio.google.com](https://aistudio.google.com/app/apikey). A key from a Google Cloud project will also work.
+
+When you run the application locally, it will prompt you to enter this key once per session.
+
+If you deploy this to your own website, you can create a `.htaccess` file with `SetEnv GEMINI_API_KEY (your key here)` and use the included `gemini-proxy.php` to avoid exposing your key to users.
+
+#### 2. Running the Application
+To run this locally on your computer:
+1.  Navigate to the project folder in your command prompt or terminal.
+2.  Install the required Python dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  Run the local server:
+    ```bash
+    python server.py
+    ```
+4.  Open your browser and go to `http://localhost:8000`. You will see your paper library and the option to process a new paper.
+
+---
+
+### Note for Developers: Using PDM
+
+This project is set up with a standard `requirements.txt` file, but if you prefer to use [PDM](https://pdm-project.org/) for dependency management, you can convert it by following these steps:
+
+1.  Make sure you have PDM installed (`pip install pdm`).
+2.  Remove the existing `requirements.txt` file.
+3.  Initialize the project with PDM: `pdm init`
+4.  Add the dependencies: `pdm add flask`
+5.  You can then run the server using `pdm run python server.py`.
+
+---
+
+Let me know if you modify and improve (I already have in mind an 'adaptive' paper that goes from 500 words for the public, to 2000 words Quanta magazine style, to a review article description, to full details, with users able to choose and expand at will and AI handling those summarizations). A new way to read academic research is en route.
