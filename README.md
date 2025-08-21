@@ -13,11 +13,15 @@ My other tools are at https://kevinbryanecon.com/tools.html and on this Git. Of 
 ## How to Set Up and Run Locally
 
 #### 1. API Key
-You will need a Google API key with access to the Gemini models. The free tier is generally sufficient for this use case. You can get a key from [aistudio.google.com](https://aistudio.google.com/app/apikey). A key from a Google Cloud project will also work.
+You will need a Google API key with access to the Gemini models. You can get a key from [aistudio.google.com](https://aistudio.google.com/app/apikey) or from a Google Cloud project.
 
-When you run the application locally, it will prompt you to enter this key once per session.
-
-If you deploy this to your own website, you can create a `.htaccess` file with `SetEnv GEMINI_API_KEY (your key here)` and use the included `gemini-proxy.php` to avoid exposing your key to users.
+To configure your key for local use:
+1. Create a new file named `.env` in the main project directory. (You can copy the `.env.example` file for this).
+2. Inside the `.env` file, add the following line, replacing `YOUR_API_KEY_HERE` with your actual key:
+   ```
+   GEMINI_API_KEY="YOUR_API_KEY_HERE"
+   ```
+The Python server will automatically load this key. It is not exposed in the browser.
 
 #### 2. Running the Application
 To run this locally on your computer:
@@ -32,6 +36,8 @@ To run this locally on your computer:
     ```
 4.  Open your browser and go to `http://localhost:8000`. You will see your paper library and the option to process a new paper.
 
+**Note on Internet Connection:** The figure extraction feature for PDFs relies on the `pdf.js` library, which is loaded from an online CDN. If you are on a network that blocks access to `cdnjs.cloudflare.com`, the figure extraction may fail.
+
 ---
 
 ### Note for Developers: Using PDM
@@ -41,7 +47,7 @@ This project is set up with a standard `requirements.txt` file, but if you prefe
 1.  Make sure you have PDM installed (`pip install pdm`).
 2.  Remove the existing `requirements.txt` file.
 3.  Initialize the project with PDM: `pdm init`
-4.  Add the dependencies: `pdm add flask`
+4.  Add the dependencies: `pdm add flask requests python-dotenv`
 5.  You can then run the server using `pdm run python server.py`.
 
 ---

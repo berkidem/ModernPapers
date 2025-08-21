@@ -885,14 +885,8 @@
     <!-- MODAL DIALOGS -->
     <!-- ------------------------------------------------------------------- -->
 
-    <!-- API Key Modal -->
-    <div class="api-key-modal" id="apiKeyModal">
-        <h3>Gemini API Key Required</h3>
-        <p>Please enter your Gemini API key to use the Q&A feature. Your key will only be stored for this session.</p>
-        <p style="font-size: 0.85rem;">Get a free key at: <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></p>
-        <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key">
-        <button id="apiKeySubmit">Continue</button>
-    </div>
+    <!-- API Key Modal is no longer needed as the key is handled by the backend -->
+    <div class="api-key-modal" id="apiKeyModal" style="display: none;"></div>
 
     <!-- This modal is no longer used, it's replaced by an inline section -->
     <div class="api-key-modal" id="uploadModal" style="display: none;"></div>
@@ -1368,6 +1362,14 @@
                 resetFigureUI();
                 await ensurePdfjsLibLoaded();
                 configurePdfjsWorker();
+
+                if (typeof window.pdfjsLib === 'undefined') {
+                    fxError('PDF library failed to load. Please check your internet connection and try again.');
+                    loadingOverlay.style.display = 'none';
+                    fxOverlay.style.display = 'none';
+                    return;
+                }
+
                 const arrayBuffer = await file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                 const totalPages = pdf.numPages;
@@ -1690,72 +1692,32 @@ So now what one can see in <a href="#fig1">Figure 1</a> is that, as noted in <a 
         // API KEY MANAGEMENT
         // ---------------------------------------------------------------
 
-async function ensureLocalKey() {
-  if (sessionApiKey) return sessionApiKey;
-
-  // Only prompt on localhost/127.0.0.1
-  const host = location.hostname;
-  const isLocal = host === 'localhost' || host === '127.0.0.1';
-
-  if (!isLocal) {
-    throw new Error('Proxy required (no key exposed in production).');
-  }
-
-  return new Promise((resolve) => {
-    apiKeyModal.classList.add('visible');
-    const submit = () => {
-      const key = apiKeyInput.value.trim();
-      if (key) {
-        sessionApiKey = key;
-        apiKeyModal.classList.remove('visible');
-        apiKeyInput.value = '';
-        resolve(key);
-      }
-    };
-    apiKeySubmit.onclick = submit;
-    apiKeyInput.onkeypress = (e) => { if (e.key === 'Enter') submit(); };
-  });
-}
+// The API key is now handled by the Python server backend, so the
+// ensureLocalKey function and the corresponding modal are no longer needed.
 
 // ADD this helper near the top of your script:
 async function postGemini(payload) {
-  // 1) Try server-side proxy (keeps key private in production)
-  try {
-    const res = await fetch('gemini-proxy.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (res.ok) return await res.json();
+    // This function now sends the request to our own Python server, which
+    // will securely add the API key and forward the request to Google.
+    // This avoids all the complex client-side logic for handling keys.
+    try {
+        const res = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-    // If proxy returns non-JSON error, surface it
-    const raw = await res.text();
-    try { throw new Error(JSON.parse(raw).error || raw); } catch { throw new Error(raw); }
-  } catch (err) {
-    // 2) If we're local, fall back to direct Google call using a prompted key
-    const host = location.hostname;
-    const isLocal = host === 'localhost' || host === '127.0.0.1';
-    if (!isLocal) throw err;
-
-    const key = await ensureLocalKey();
-    const model = payload.model || 'gemini-2.5-flash';
-    const direct = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, model: undefined }) // Google URL carries the model
-      }
-    );
-
-    const raw = await direct.text();
-    if (!direct.ok) {
-      try { throw new Error(JSON.parse(raw).error?.message || raw); }
-      catch { throw new Error(raw); }
+        const data = await res.json();
+        if (!res.ok) {
+            // Forward the error message from the server/Google
+            throw new Error(data.error || 'An unknown error occurred.');
+        }
+        return data;
+    } catch (err) {
+        console.error("Error communicating with the backend proxy:", err);
+        // Re-throw the error to be caught by the calling function
+        throw err;
     }
-    try { return JSON.parse(raw); }
-    catch { throw new Error('Non-JSON from Gemini:\n' + raw.slice(0, 300)); }
-  }
 }
 
 
